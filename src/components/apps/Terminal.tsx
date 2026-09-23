@@ -141,6 +141,7 @@ export default function Terminal() {
       className="flex flex-col h-full bg-gray-900 font-mono text-sm"
       ref={containerRef}
       onClick={() => inputRef.current?.focus()}
+      onTouchEnd={() => inputRef.current?.focus()}
     >
       <div className="flex-1 overflow-y-auto p-2">
         {lines.map((line, i) => (

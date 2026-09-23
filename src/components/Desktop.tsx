@@ -4,6 +4,7 @@ import { DesktopIcon } from '../types';
 interface DesktopProps {
   onAppOpen: (component: string, title: string, icon: string) => void;
   onContextMenu: (x: number, y: number) => void;
+  onDesktopClick?: () => void;
 }
 
 const desktopIcons: DesktopIcon[] = [
@@ -12,60 +13,90 @@ const desktopIcons: DesktopIcon[] = [
   { id: 'notepad', title: 'Notepad', icon: '📝', component: 'notepad' },
   { id: 'calculator', title: 'Calculator', icon: '🔢', component: 'calculator' },
   { id: 'explorer', title: 'File Explorer', icon: '📁', component: 'explorer' },
-  { id: 'browser', title: 'Edge', icon: '🌐', component: 'browser' },
+  { id: 'browser', title: 'Microsoft Edge', icon: '🌐', component: 'browser' },
   { id: 'terminal', title: 'Terminal', icon: '⬛', component: 'terminal' },
   { id: 'settings', title: 'Settings', icon: '⚙️', component: 'settings' },
+  { id: 'paint', title: 'Paint', icon: '🎨', component: 'paint' },
+  { id: 'photos', title: 'Photos', icon: '🖼️', component: 'photos' },
 ];
 
-export default function Desktop({ onAppOpen, onContextMenu }: DesktopProps) {
+export default function Desktop({ onAppOpen, onContextMenu, onDesktopClick }: DesktopProps) {
   const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
+  const [lastTap, setLastTap] = useState<{ id: string; time: number }>({ id: '', time: 0 });
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     onContextMenu(e.clientX, e.clientY);
   };
 
-  const handleTouchContextMenu = (e: React.TouchEvent) => {
-    // Long press detection for context menu on touch
-    const timer = setTimeout(() => {
-      if (e.touches.length === 1) {
-        onContextMenu(e.touches[0].clientX, e.touches[0].clientY);
-      }
-    }, 800);
+  const longPressTimer = { current: null as ReturnType<typeof setTimeout> | null };
 
-    const clearTimer = () => clearTimeout(timer);
-    e.currentTarget.addEventListener('touchend', clearTimer, { once: true });
-    e.currentTarget.addEventListener('touchmove', clearTimer, { once: true });
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    longPressTimer.current = setTimeout(() => {
+      onContextMenu(touch.clientX, touch.clientY);
+    }, 700);
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const handleTouchMove = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const handleIconClick = (icon: DesktopIcon) => {
+    setSelectedIcon(icon.id);
+  };
+
+  const handleIconDoubleClick = (icon: DesktopIcon) => {
+    onAppOpen(icon.component, icon.title, icon.icon);
+  };
+
+  const handleIconTouchEnd = (e: React.TouchEvent, icon: DesktopIcon) => {
+    e.stopPropagation();
+    const now = Date.now();
+    if (lastTap.id === icon.id && now - lastTap.time < 400) {
+      onAppOpen(icon.component, icon.title, icon.icon);
+      setLastTap({ id: '', time: 0 });
+    } else {
+      setLastTap({ id: icon.id, time: now });
+      setSelectedIcon(icon.id);
+    }
   };
 
   return (
     <div
       className="absolute inset-0 pb-12"
       onContextMenu={handleContextMenu}
-      onTouchStart={handleTouchContextMenu}
-      onClick={() => setSelectedIcon(null)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchMove={handleTouchMove}
+      onClick={() => { setSelectedIcon(null); onDesktopClick?.(); }}
     >
-      <div className="p-2 grid grid-cols-1 gap-0" style={{ gridAutoFlow: 'column', gridTemplateRows: 'repeat(auto-fill, 90px)', height: 'calc(100% - 48px)' }}>
+      {/* Desktop icons grid - Windows 10 style */}
+      <div className="p-2 flex flex-col flex-wrap content-start gap-0.5 h-full" style={{ maxHeight: 'calc(100vh - 48px)' }}>
         {desktopIcons.map(icon => (
           <button
             key={icon.id}
-            className={`desktop-icon flex flex-col items-center justify-center p-2 rounded border border-transparent transition-colors ${selectedIcon === icon.id ? 'selected' : ''}`}
-            onClick={(e) => { e.stopPropagation(); setSelectedIcon(icon.id); }}
-            onDoubleClick={() => onAppOpen(icon.component, icon.title, icon.icon)}
-            onTouchEnd={(e) => {
-              e.stopPropagation();
-              // Double tap detection
-              const now = Date.now();
-              const lastTap = (e.currentTarget as any)._lastTap || 0;
-              if (now - lastTap < 300) {
-                onAppOpen(icon.component, icon.title, icon.icon);
-              }
-              (e.currentTarget as any)._lastTap = now;
-              setSelectedIcon(icon.id);
-            }}
+            className={`desktop-icon flex flex-col items-center justify-center w-[76px] h-[82px] rounded-sm border transition-all ${
+              selectedIcon === icon.id
+                ? 'bg-white/15 border-white/30'
+                : 'bg-transparent border-transparent hover:bg-white/8 hover:border-white/15'
+            }`}
+            onClick={(e) => { e.stopPropagation(); handleIconClick(icon); }}
+            onDoubleClick={() => handleIconDoubleClick(icon)}
+            onTouchEnd={(e) => handleIconTouchEnd(e, icon)}
           >
-            <span className="text-3xl mb-1 drop-shadow-lg">{icon.icon}</span>
-            <span className="text-white text-[11px] text-center leading-tight drop-shadow-md max-w-[70px] truncate">
+            <span className="text-[40px] leading-none mb-0.5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{icon.icon}</span>
+            <span className="text-white text-[11px] text-center leading-[13px] max-w-[70px] px-0.5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] line-clamp-2">
               {icon.title}
             </span>
           </button>
