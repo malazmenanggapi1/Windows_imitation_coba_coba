@@ -1,1 +1,146 @@
 @import "tailwindcss";
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Windows 10 scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Window animations */
+.window-open {
+  animation: windowOpen 0.15s ease-out;
+}
+
+@keyframes windowOpen {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Start menu animation */
+.start-menu-open {
+  animation: startMenuOpen 0.2s ease-out;
+}
+
+@keyframes startMenuOpen {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Taskbar hover effect */
+.taskbar-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.taskbar-item.active {
+  background: rgba(255, 255, 255, 0.15);
+  border-bottom: 2px solid #4cc2ff;
+}
+
+/* Desktop icon hover */
+.desktop-icon:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.desktop-icon.selected {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Context menu */
+.context-menu {
+  animation: contextMenuOpen 0.1s ease-out;
+}
+
+@keyframes contextMenuOpen {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Touch-friendly styles */
+@media (pointer: coarse) {
+  .taskbar-item {
+    min-height: 48px;
+    min-width: 48px;
+  }
+  
+  .desktop-icon {
+    min-height: 80px;
+    min-width: 80px;
+  }
+
+  button {
+    min-height: 36px;
+  }
+}
+
+/* Prevent pull-to-refresh and overscroll */
+html {
+  overscroll-behavior: none;
+}
+
+body {
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
+/* Prevent text selection during drag */
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Segoe UI font fallback */
+@font-face {
+  font-family: 'Segoe UI';
+  src: local('Segoe UI'), local('SegoeUI');
+}
