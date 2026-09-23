@@ -8,9 +8,13 @@ interface TaskbarProps {
   onActionCenterClick: () => void;
   onCalendarClick: () => void;
   onQuickSettingsClick: () => void;
+  onTaskViewClick: () => void;
+  onWindowHover: (appId: string, x: number) => void;
+  onWindowLeave: () => void;
   actionCenterOpen: boolean;
   calendarOpen: boolean;
   quickSettingsOpen: boolean;
+  taskViewOpen: boolean;
 }
 
 export default function Taskbar({
@@ -21,9 +25,13 @@ export default function Taskbar({
   onActionCenterClick,
   onCalendarClick,
   onQuickSettingsClick,
+  onTaskViewClick,
+  onWindowHover,
+  onWindowLeave,
   actionCenterOpen,
   calendarOpen,
   quickSettingsOpen,
+  taskViewOpen,
 }: TaskbarProps) {
   const [time, setTime] = useState(new Date());
 
@@ -67,7 +75,12 @@ export default function Taskbar({
       </div>
 
       {/* Task View */}
-      <button className="h-full w-[40px] flex items-center justify-center hover:bg-white/8 transition-colors" title="Task View">
+      <button
+        className={`h-full w-[40px] flex items-center justify-center transition-colors ${taskViewOpen ? 'bg-white/12' : 'hover:bg-white/8'}`}
+        onClick={(e) => { e.stopPropagation(); onTaskViewClick(); }}
+        onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); onTaskViewClick(); }}
+        title="Task View"
+      >
         <svg width="16" height="16" viewBox="0 0 18 18" fill="none" className="text-white/70">
           <rect x="1" y="1" width="6.5" height="6.5" rx="0.5" stroke="currentColor" strokeWidth="1.2" />
           <rect x="10.5" y="1" width="6.5" height="6.5" rx="0.5" stroke="currentColor" strokeWidth="1.2" />
@@ -100,6 +113,11 @@ export default function Taskbar({
             }`}
             onClick={() => onWindowClick(win.id)}
             onTouchEnd={() => onWindowClick(win.id)}
+            onMouseEnter={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              onWindowHover(win.id, rect.left + rect.width / 2);
+            }}
+            onMouseLeave={onWindowLeave}
             title={win.title}
           >
             <span className="text-base flex-shrink-0">{win.icon}</span>

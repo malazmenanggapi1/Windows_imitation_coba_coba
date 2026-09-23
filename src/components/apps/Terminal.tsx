@@ -28,18 +28,23 @@ export default function Terminal() {
         newLines.push(
           '',
           'Available commands:',
-          '  help     - Show this help message',
-          '  cls      - Clear screen',
-          '  dir      - List directory contents',
-          '  echo     - Display a message',
-          '  date     - Display current date',
-          '  time     - Display current time',
-          '  ver      - Display Windows version',
-          '  whoami   - Display current user',
-          '  hostname - Display computer name',
-          '  ipconfig - Display IP configuration',
+          '  help       - Show this help message',
+          '  cls        - Clear screen',
+          '  dir        - List directory contents',
+          '  cd         - Change directory',
+          '  echo       - Display a message',
+          '  date       - Display current date',
+          '  time       - Display current time',
+          '  ver        - Display Windows version',
+          '  whoami     - Display current user',
+          '  hostname   - Display computer name',
+          '  ipconfig   - Display IP configuration',
+          '  ping       - Ping a host',
+          '  tasklist   - Display running processes',
           '  systeminfo - Display system information',
-          '  exit     - Close terminal',
+          '  color      - Change console colors',
+          '  title      - Set window title',
+          '  exit       - Close terminal',
           ''
         );
         break;
@@ -111,6 +116,44 @@ export default function Terminal() {
           'Virtual Memory: Max Size:  32,768 MB',
           ''
         );
+        break;
+      case 'ping':
+        newLines.push(
+          '',
+          'Pinging 127.0.0.1 with 32 bytes of data:',
+          'Reply from 127.0.0.1: bytes=32 time<1ms TTL=128',
+          'Reply from 127.0.0.1: bytes=32 time<1ms TTL=128',
+          'Reply from 127.0.0.1: bytes=32 time<1ms TTL=128',
+          'Reply from 127.0.0.1: bytes=32 time<1ms TTL=128',
+          '',
+          'Ping statistics for 127.0.0.1:',
+          '    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),',
+          'Approximate round trip times in milli-seconds:',
+          '    Minimum = 0ms, Maximum = 0ms, Average = 0ms',
+          ''
+        );
+        break;
+      case 'tasklist':
+        newLines.push(
+          '',
+          'Image Name                     PID Session Name        Mem Usage',
+          '========================= ======== ================ ===========',
+          'System Idle Process              0 Services                  8 K',
+          'System                           4 Services              1,024 K',
+          'explorer.exe                  1840 Console               85,432 K',
+          'chrome.exe                    3256 Console              142,876 K',
+          'RuntimeBroker.exe             2104 Console               18,240 K',
+          'SearchUI.exe                  2892 Console               65,536 K',
+          'ShellExperienceHost.exe       3100 Console               32,768 K',
+          'StartMenuExperienceHost.e     3456 Console               45,056 K',
+          'SecurityHealthService.exe     1560 Services              12,288 K',
+          'svchost.exe                    892 Services              24,576 K',
+          'dwm.exe                       1200 Console               55,296 K',
+          ''
+        );
+        break;
+      case 'cd':
+        newLines.push('', `Current directory: ${currentPath}`, '');
         break;
       case 'exit':
         newLines.push('', 'Terminal closed.');
