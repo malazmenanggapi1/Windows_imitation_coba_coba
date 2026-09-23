@@ -5,9 +5,26 @@ interface TaskbarProps {
   startOpen: boolean;
   openWindows: { id: string; title: string; icon: string; isMinimized: boolean }[];
   onWindowClick: (id: string) => void;
+  onActionCenterClick: () => void;
+  onCalendarClick: () => void;
+  onQuickSettingsClick: () => void;
+  actionCenterOpen: boolean;
+  calendarOpen: boolean;
+  quickSettingsOpen: boolean;
 }
 
-export default function Taskbar({ onStartClick, startOpen, openWindows, onWindowClick }: TaskbarProps) {
+export default function Taskbar({
+  onStartClick,
+  startOpen,
+  openWindows,
+  onWindowClick,
+  onActionCenterClick,
+  onCalendarClick,
+  onQuickSettingsClick,
+  actionCenterOpen,
+  calendarOpen,
+  quickSettingsOpen,
+}: TaskbarProps) {
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -24,91 +41,147 @@ export default function Taskbar({ onStartClick, startOpen, openWindows, onWindow
   };
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 h-12 bg-gray-900/95 backdrop-blur-sm flex items-center z-[9999] border-t border-gray-700/50">
+    <div className="absolute bottom-0 left-0 right-0 h-[48px] bg-[#1f1f1f]/96 backdrop-blur-md flex items-center z-[9999] border-t border-white/5">
       {/* Start Button */}
       <button
-        className={`h-full px-4 flex items-center justify-center taskbar-item transition-colors ${startOpen ? 'bg-white/15' : ''}`}
+        className={`h-full w-[48px] flex items-center justify-center transition-colors ${startOpen ? 'bg-white/12' : 'hover:bg-white/8'}`}
         onClick={onStartClick}
-        onTouchEnd={onStartClick}
+        onTouchEnd={(e) => { e.preventDefault(); onStartClick(); }}
+        title="Start"
       >
         <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-          <rect x="1" y="1" width="8" height="8" fill="#4cc2ff" />
-          <rect x="11" y="1" width="8" height="8" fill="#4cc2ff" />
-          <rect x="1" y="11" width="8" height="8" fill="#4cc2ff" />
-          <rect x="11" y="11" width="8" height="8" fill="#4cc2ff" />
+          <rect x="1" y="1" width="8.5" height="8.5" fill="#4cc2ff" />
+          <rect x="10.5" y="1" width="8.5" height="8.5" fill="#4cc2ff" />
+          <rect x="1" y="10.5" width="8.5" height="8.5" fill="#4cc2ff" />
+          <rect x="10.5" y="10.5" width="8.5" height="8.5" fill="#4cc2ff" />
         </svg>
       </button>
 
       {/* Search */}
-      <div className="h-8 ml-2 px-3 bg-white/10 rounded flex items-center min-w-[180px] max-w-[260px]">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="white" className="opacity-60 mr-2 flex-shrink-0">
-          <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
+      <div className="h-[32px] ml-1.5 px-3 bg-white/8 rounded-[4px] flex items-center min-w-[180px] max-w-[260px] hover:bg-white/12 transition-colors cursor-text">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="white" className="opacity-50 mr-2 flex-shrink-0">
+          <circle cx="7" cy="7" r="5.5" fill="none" stroke="white" strokeWidth="1.5" opacity="0.5" />
+          <line x1="11" y1="11" x2="14.5" y2="14.5" stroke="white" strokeWidth="1.5" opacity="0.5" />
         </svg>
-        <span className="text-white/60 text-sm truncate">Type here to search</span>
+        <span className="text-white/50 text-[13px] truncate">Type here to search</span>
       </div>
 
       {/* Task View */}
-      <button className="h-full px-3 flex items-center justify-center taskbar-item">
-        <svg width="18" height="18" viewBox="0 0 20 20" fill="white" className="opacity-80">
-          <rect x="1" y="1" width="7" height="7" rx="1" />
-          <rect x="12" y="1" width="7" height="7" rx="1" />
-          <rect x="1" y="12" width="7" height="7" rx="1" />
-          <rect x="12" y="12" width="7" height="7" rx="1" />
+      <button className="h-full w-[40px] flex items-center justify-center hover:bg-white/8 transition-colors" title="Task View">
+        <svg width="16" height="16" viewBox="0 0 18 18" fill="none" className="text-white/70">
+          <rect x="1" y="1" width="6.5" height="6.5" rx="0.5" stroke="currentColor" strokeWidth="1.2" />
+          <rect x="10.5" y="1" width="6.5" height="6.5" rx="0.5" stroke="currentColor" strokeWidth="1.2" />
+          <rect x="1" y="10.5" width="6.5" height="6.5" rx="0.5" stroke="currentColor" strokeWidth="1.2" />
+          <rect x="10.5" y="10.5" width="6.5" height="6.5" rx="0.5" stroke="currentColor" strokeWidth="1.2" />
         </svg>
       </button>
 
+      {/* Pinned apps / File Explorer */}
+      <button className="h-full w-[44px] flex items-center justify-center hover:bg-white/8 transition-colors" title="File Explorer">
+        <span className="text-xl">📁</span>
+      </button>
+
+      <button className="h-full w-[44px] flex items-center justify-center hover:bg-white/8 transition-colors" title="Microsoft Edge">
+        <span className="text-xl">🌐</span>
+      </button>
+
+      {/* Separator */}
+      <div className="w-px h-5 bg-white/10 mx-0.5" />
+
       {/* Open Windows */}
-      <div className="flex-1 flex items-center h-full ml-1 overflow-x-auto">
+      <div className="flex-1 flex items-center h-full ml-0.5 overflow-x-auto">
         {openWindows.map(win => (
           <button
             key={win.id}
-            className={`h-full px-3 flex items-center justify-center taskbar-item transition-colors min-w-[44px] ${!win.isMinimized ? 'active' : ''}`}
+            className={`h-full min-w-[44px] max-w-[160px] px-2 flex items-center gap-1.5 transition-colors relative ${
+              !win.isMinimized
+                ? 'bg-white/12 hover:bg-white/16'
+                : 'hover:bg-white/8'
+            }`}
             onClick={() => onWindowClick(win.id)}
             onTouchEnd={() => onWindowClick(win.id)}
             title={win.title}
           >
-            <span className="text-lg mr-1">{win.icon}</span>
-            <span className="text-white/90 text-xs truncate max-w-[100px] hidden sm:inline">{win.title}</span>
+            <span className="text-base flex-shrink-0">{win.icon}</span>
+            <span className="text-white/80 text-[11px] truncate hidden md:inline">{win.title}</span>
+            {/* Active indicator */}
+            {!win.isMinimized && (
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[20px] h-[2px] bg-[#4cc2ff] rounded-full" />
+            )}
+            {win.isMinimized && (
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[6px] h-[2px] bg-white/40 rounded-full" />
+            )}
           </button>
         ))}
       </div>
 
       {/* System Tray */}
-      <div className="flex items-center h-full ml-auto">
-        <button className="h-full px-2 flex items-center taskbar-item">
-          <span className="text-white/70 text-xs">▲</span>
-        </button>
-        
-        {/* Network, Sound, Battery icons */}
-        <div className="flex items-center px-2 gap-2">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="white" className="opacity-70">
-            <path d="M1 14.5A1.5 1.5 0 0 0 2.5 16h11a1.5 1.5 0 0 0 1.5-1.5v-5a1.5 1.5 0 0 0-1.5-1.5h-11A1.5 1.5 0 0 0 1 9.5v5z" />
-            <path d="M2 3h12v2H2V3z" fill="white" opacity="0.5" />
+      <div className="flex items-center h-full ml-auto flex-shrink-0">
+        {/* Show hidden icons */}
+        <button className="h-full w-[20px] flex items-center justify-center hover:bg-white/8">
+          <svg width="8" height="8" viewBox="0 0 8 8" fill="white" className="opacity-50">
+            <path d="M1 5l3-3 3 3" fill="none" stroke="white" strokeWidth="1.2" opacity="0.5" />
           </svg>
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="white" className="opacity-70">
-            <path d="M11.5 1a.5.5 0 0 1 .5.5v13a.5.5 0 0 1-1 0v-13a.5.5 0 0 1 .5-.5z" />
-            <path d="M3 8a5 5 0 0 1 10 0" fill="none" stroke="white" strokeWidth="1.5" opacity="0.7" />
-            <path d="M5 8a3 3 0 0 1 6 0" fill="none" stroke="white" strokeWidth="1.5" opacity="0.7" />
-          </svg>
-          <svg width="16" height="14" viewBox="0 0 20 14" fill="white" className="opacity-70">
-            <rect x="1" y="2" width="15" height="10" rx="1" fill="none" stroke="white" strokeWidth="1.5" />
-            <rect x="3" y="4" width="10" height="6" rx="0.5" fill="white" opacity="0.7" />
-            <rect x="17" y="5" width="2" height="4" rx="0.5" fill="white" opacity="0.7" />
-          </svg>
-        </div>
-
-        {/* Clock */}
-        <button className="h-full px-3 flex flex-col items-center justify-center taskbar-item">
-          <span className="text-white/90 text-xs leading-tight">{formatTime(time)}</span>
-          <span className="text-white/90 text-xs leading-tight">{formatDate(time)}</span>
         </button>
 
-        {/* Notification */}
-        <button className="h-full px-2 flex items-center taskbar-item">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="white" className="opacity-70">
-            <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zM8 1.918l-.797.161A4.002 4.002 0 0 0 4 6c0 .628-.134 2.197-.459 3.742-.16.767-.376 1.566-.663 2.258h10.244c-.287-.692-.502-1.49-.663-2.258C12.134 8.197 12 6.628 12 6a4.002 4.002 0 0 0-3.203-3.92L8 1.917z" />
+        {/* Network, Sound, Battery */}
+        <button
+          className={`h-full px-1.5 flex items-center gap-1.5 hover:bg-white/8 transition-colors ${quickSettingsOpen ? 'bg-white/12' : ''}`}
+          title="Network & Sound"
+          onClick={(e) => { e.stopPropagation(); onQuickSettingsClick(); }}
+          onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); onQuickSettingsClick(); }}
+        >
+          <svg width="14" height="12" viewBox="0 0 16 14" fill="none" className="text-white/70">
+            <path d="M1 10 Q8 2 15 10" stroke="currentColor" strokeWidth="1.5" fill="none" opacity="0.4" />
+            <path d="M3 10 Q8 5 13 10" stroke="currentColor" strokeWidth="1.5" fill="none" opacity="0.6" />
+            <path d="M5 10 Q8 7 11 10" stroke="currentColor" strokeWidth="1.5" fill="none" opacity="0.8" />
+            <circle cx="8" cy="11" r="1.5" fill="currentColor" />
+          </svg>
+          <svg width="14" height="12" viewBox="0 0 16 14" fill="none" className="text-white/70">
+            <path d="M3 5 L3 11 L6 11 L10 14 L10 2 L6 5 Z" fill="currentColor" opacity="0.8" />
+            <path d="M12 4 Q14 7 12 10" stroke="currentColor" strokeWidth="1.2" fill="none" opacity="0.6" />
+          </svg>
+          <svg width="18" height="10" viewBox="0 0 22 12" fill="none" className="text-white/70">
+            <rect x="0.5" y="0.5" width="18" height="11" rx="1.5" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+            <rect x="2" y="2" width="13" height="8" rx="0.5" fill="currentColor" opacity="0.7" />
+            <rect x="19.5" y="3.5" width="2" height="5" rx="0.5" fill="currentColor" opacity="0.4" />
           </svg>
         </button>
+
+        {/* Clock / Calendar */}
+        <button
+          className={`h-full px-3 flex flex-col items-center justify-center hover:bg-white/8 transition-colors ${calendarOpen ? 'bg-white/12' : ''}`}
+          onClick={onCalendarClick}
+          onTouchEnd={(e) => { e.preventDefault(); onCalendarClick(); }}
+        >
+          <span className="text-white/90 text-[12px] leading-[14px]">{formatTime(time)}</span>
+          <span className="text-white/90 text-[12px] leading-[14px]">{formatDate(time)}</span>
+        </button>
+
+        {/* Notification / Action Center */}
+        <button
+          className={`h-full w-[40px] flex items-center justify-center hover:bg-white/8 transition-colors ${actionCenterOpen ? 'bg-white/12' : ''}`}
+          onClick={onActionCenterClick}
+          onTouchEnd={(e) => { e.preventDefault(); onActionCenterClick(); }}
+          title="Notifications"
+        >
+          <div className="relative">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="white" className="opacity-70">
+              <rect x="1" y="1" width="14" height="10" rx="1" fill="none" stroke="white" strokeWidth="1.2" opacity="0.7" />
+              <line x1="4" y1="13" x2="12" y2="13" stroke="white" strokeWidth="1.2" opacity="0.7" />
+            </svg>
+            {/* Notification badge */}
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-400 rounded-full flex items-center justify-center">
+              <span className="text-[7px] text-white font-bold">3</span>
+            </div>
+          </div>
+        </button>
+
+        {/* Show Desktop */}
+        <button
+          className="h-full w-[5px] hover:bg-white/20 transition-colors border-l border-white/5"
+          title="Show Desktop"
+        />
       </div>
     </div>
   );
