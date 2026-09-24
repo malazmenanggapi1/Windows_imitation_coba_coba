@@ -17,6 +17,7 @@ const desktopIcons: DesktopIcon[] = [
   { id: 'terminal', title: 'Terminal', icon: '⬛', component: 'terminal' },
   { id: 'settings', title: 'Settings', icon: '⚙️', component: 'settings' },
   { id: 'paint', title: 'Paint', icon: '🎨', component: 'paint' },
+  { id: 'taskmanager', title: 'Task Manager', icon: '📊', component: 'taskmanager' },
   { id: 'photos', title: 'Photos', icon: '🖼️', component: 'photos' },
 ];
 

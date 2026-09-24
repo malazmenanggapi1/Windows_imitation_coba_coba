@@ -1,6 +1,8 @@
 import React, { useRef, useCallback, useState, useEffect } from 'react';
 import { WindowState } from '../types';
 
+type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw' | null;
+
 interface WindowProps {
   window: WindowState;
   onClose: (id: string) => void;
@@ -15,13 +17,19 @@ interface WindowProps {
 
 export default function Window({ window: win, onClose, onMinimize, onMaximize, onFocus, onMove, onResize, onSnap, children }: WindowProps) {
   const dragRef = useRef<{ startX: number; startY: number; winX: number; winY: number } | null>(null);
-  const resizeRef = useRef<{ startX: number; startY: number; startW: number; startH: number } | null>(null);
+  const resizeRef = useRef<{ startX: number; startY: number; startW: number; startH: number; startXPos: number; startYPos: number; direction: ResizeDirection } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [showSnapPreview, setShowSnapPreview] = useState<'left' | 'right' | null>(null);
+  const [isMaximizedBeforeDrag, setIsMaximizedBeforeDrag] = useState(false);
+  const [dragOffsetX, setDragOffsetX] = useState(0);
 
   const handleDragStart = useCallback((clientX: number, clientY: number) => {
-    if (win.isMaximized) return;
+    if (win.isMaximized) {
+      // Allow dragging from maximized to restore
+      setIsMaximizedBeforeDrag(true);
+      setDragOffsetX(clientX - win.x);
+    }
     dragRef.current = {
       startX: clientX,
       startY: clientY,
@@ -33,7 +41,29 @@ export default function Window({ window: win, onClose, onMinimize, onMaximize, o
   }, [win.id, win.x, win.y, win.isMaximized, onFocus]);
 
   const handleDragMove = useCallback((clientX: number, clientY: number) => {
-    if (!dragRef.current || win.isMaximized) return;
+    if (!dragRef.current) return;
+
+    if (isMaximizedBeforeDrag) {
+      // Restore window when dragged from maximized
+      const dx = clientX - dragRef.current.startX;
+      if (Math.abs(dx) > 5) {
+        onMaximize(win.id); // toggle off maximize
+        setIsMaximizedBeforeDrag(false);
+        const newWidth = win.width;
+        const newX = clientX - newWidth / 2;
+        dragRef.current = {
+          startX: clientX,
+          startY: dragRef.current.startY,
+          winX: newX,
+          winY: 0,
+        };
+        onMove(win.id, newX, 0);
+      }
+      return;
+    }
+
+    if (win.isMaximized) return;
+
     const dx = clientX - dragRef.current.startX;
     const dy = clientY - dragRef.current.startY;
     const newX = Math.max(-win.width + 100, dragRef.current.winX + dx);
@@ -41,46 +71,71 @@ export default function Window({ window: win, onClose, onMinimize, onMaximize, o
     onMove(win.id, newX, newY);
 
     // Snap preview detection
-    if (clientX <= 5) {
+    if (clientX <= 2) {
       setShowSnapPreview('left');
-    } else if (clientX >= window.innerWidth - 5) {
+    } else if (clientX >= window.innerWidth - 2) {
       setShowSnapPreview('right');
-    } else if (clientY <= 5) {
-      // maximize on top
+    } else if (clientY <= 2) {
+      setShowSnapPreview(null); // Will maximize on release
     } else {
       setShowSnapPreview(null);
     }
-  }, [win.id, win.isMaximized, win.width, onMove]);
+  }, [win.id, win.isMaximized, win.width, onMove, onMaximize, isMaximizedBeforeDrag]);
 
-  const handleDragEnd = useCallback((clientX?: number) => {
+  const handleDragEnd = useCallback((clientX?: number, clientY?: number) => {
     if (showSnapPreview && clientX !== undefined) {
       onSnap(win.id, showSnapPreview);
+    } else if (clientY !== undefined && clientY <= 2 && !win.isMaximized) {
+      onMaximize(win.id);
     }
     dragRef.current = null;
     setIsDragging(false);
+    setIsMaximizedBeforeDrag(false);
     setShowSnapPreview(null);
-  }, [win.id, showSnapPreview, onSnap]);
+  }, [win.id, win.isMaximized, showSnapPreview, onSnap, onMaximize]);
 
-  const handleResizeStart = useCallback((clientX: number, clientY: number) => {
+  const handleResizeStart = useCallback((clientX: number, clientY: number, direction: ResizeDirection) => {
     if (win.isMaximized) return;
     resizeRef.current = {
       startX: clientX,
       startY: clientY,
       startW: win.width,
       startH: win.height,
+      startXPos: win.x,
+      startYPos: win.y,
+      direction,
     };
     setIsResizing(true);
     onFocus(win.id);
-  }, [win.id, win.width, win.height, win.isMaximized, onFocus]);
+  }, [win.id, win.width, win.height, win.x, win.y, win.isMaximized, onFocus]);
 
   const handleResizeMove = useCallback((clientX: number, clientY: number) => {
     if (!resizeRef.current) return;
-    const dx = clientX - resizeRef.current.startX;
-    const dy = clientY - resizeRef.current.startY;
-    const newW = Math.max(300, resizeRef.current.startW + dx);
-    const newH = Math.max(200, resizeRef.current.startH + dy);
+    const { startX, startY, startW, startH, startXPos, startYPos, direction } = resizeRef.current;
+    const dx = clientX - startX;
+    const dy = clientY - startY;
+
+    let newW = startW;
+    let newH = startH;
+    let newX = startXPos;
+    let newY = startYPos;
+
+    if (direction?.includes('e')) newW = Math.max(300, startW + dx);
+    if (direction?.includes('w')) {
+      newW = Math.max(300, startW - dx);
+      if (newW > 300) newX = startXPos + dx;
+    }
+    if (direction?.includes('s')) newH = Math.max(200, startH + dy);
+    if (direction?.includes('n')) {
+      newH = Math.max(200, startH - dy);
+      if (newH > 200) newY = startYPos + dy;
+    }
+
     onResize(win.id, newW, newH);
-  }, [win.id, onResize]);
+    if (newX !== startXPos || newY !== startYPos) {
+      onMove(win.id, newX, newY);
+    }
+  }, [win.id, onResize, onMove]);
 
   const handleResizeEnd = useCallback(() => {
     resizeRef.current = null;
@@ -95,7 +150,7 @@ export default function Window({ window: win, onClose, onMinimize, onMaximize, o
       if (isResizing) handleResizeMove(e.clientX, e.clientY);
     };
     const handleMouseUp = (e: MouseEvent) => {
-      if (isDragging) handleDragEnd(e.clientX);
+      if (isDragging) handleDragEnd(e.clientX, e.clientY);
       if (isResizing) handleResizeEnd();
     };
     const handleTouchMove = (e: TouchEvent) => {
@@ -105,7 +160,7 @@ export default function Window({ window: win, onClose, onMinimize, onMaximize, o
       }
     };
     const handleTouchEnd = (e: TouchEvent) => {
-      if (isDragging) handleDragEnd(e.changedTouches[0]?.clientX);
+      if (isDragging) handleDragEnd(e.changedTouches[0]?.clientX, e.changedTouches[0]?.clientY);
       if (isResizing) handleResizeEnd();
     };
 
@@ -127,6 +182,48 @@ export default function Window({ window: win, onClose, onMinimize, onMaximize, o
   const style: React.CSSProperties = win.isMaximized
     ? { top: 0, left: 0, width: '100%', height: 'calc(100% - 48px)', zIndex: win.zIndex }
     : { top: win.y, left: win.x, width: win.width, height: win.height, zIndex: win.zIndex };
+
+  const resizeEdges = !win.isMaximized ? (
+    <>
+      {/* Top */}
+      <div className="absolute top-0 left-2 right-2 h-1 cursor-n-resize z-20"
+        onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(e.clientX, e.clientY, 'n'); }}
+        onTouchStart={(e) => { e.stopPropagation(); if (e.touches.length === 1) handleResizeStart(e.touches[0].clientX, e.touches[0].clientY, 'n'); }}
+      />
+      {/* Bottom */}
+      <div className="absolute bottom-0 left-2 right-2 h-1 cursor-s-resize z-20"
+        onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(e.clientX, e.clientY, 's'); }}
+        onTouchStart={(e) => { e.stopPropagation(); if (e.touches.length === 1) handleResizeStart(e.touches[0].clientX, e.touches[0].clientY, 's'); }}
+      />
+      {/* Left */}
+      <div className="absolute top-2 bottom-2 left-0 w-1 cursor-w-resize z-20"
+        onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(e.clientX, e.clientY, 'w'); }}
+        onTouchStart={(e) => { e.stopPropagation(); if (e.touches.length === 1) handleResizeStart(e.touches[0].clientX, e.touches[0].clientY, 'w'); }}
+      />
+      {/* Right */}
+      <div className="absolute top-2 bottom-2 right-0 w-1 cursor-e-resize z-20"
+        onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(e.clientX, e.clientY, 'e'); }}
+        onTouchStart={(e) => { e.stopPropagation(); if (e.touches.length === 1) handleResizeStart(e.touches[0].clientX, e.touches[0].clientY, 'e'); }}
+      />
+      {/* Corners */}
+      <div className="absolute top-0 left-0 w-3 h-3 cursor-nw-resize z-20"
+        onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(e.clientX, e.clientY, 'nw'); }}
+        onTouchStart={(e) => { e.stopPropagation(); if (e.touches.length === 1) handleResizeStart(e.touches[0].clientX, e.touches[0].clientY, 'nw'); }}
+      />
+      <div className="absolute top-0 right-0 w-3 h-3 cursor-ne-resize z-20"
+        onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(e.clientX, e.clientY, 'ne'); }}
+        onTouchStart={(e) => { e.stopPropagation(); if (e.touches.length === 1) handleResizeStart(e.touches[0].clientX, e.touches[0].clientY, 'ne'); }}
+      />
+      <div className="absolute bottom-0 left-0 w-3 h-3 cursor-sw-resize z-20"
+        onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(e.clientX, e.clientY, 'sw'); }}
+        onTouchStart={(e) => { e.stopPropagation(); if (e.touches.length === 1) handleResizeStart(e.touches[0].clientX, e.touches[0].clientY, 'sw'); }}
+      />
+      <div className="absolute bottom-0 right-0 w-3 h-3 cursor-se-resize z-20"
+        onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(e.clientX, e.clientY, 'se'); }}
+        onTouchStart={(e) => { e.stopPropagation(); if (e.touches.length === 1) handleResizeStart(e.touches[0].clientX, e.touches[0].clientY, 'se'); }}
+      />
+    </>
+  ) : null;
 
   return (
     <>
@@ -150,6 +247,9 @@ export default function Window({ window: win, onClose, onMinimize, onMaximize, o
         onMouseDown={() => onFocus(win.id)}
         onTouchStart={() => onFocus(win.id)}
       >
+        {/* Resize edges */}
+        {resizeEdges}
+
         {/* Title Bar */}
         <div
           className="flex items-center h-[32px] bg-gray-100 border-b border-gray-200 flex-shrink-0 cursor-default select-none"
@@ -208,26 +308,6 @@ export default function Window({ window: win, onClose, onMinimize, onMaximize, o
         <div className="flex-1 overflow-hidden relative">
           {children}
         </div>
-
-        {/* Resize handle - bottom right */}
-        {!win.isMaximized && (
-          <div
-            className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize z-10"
-            onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(e.clientX, e.clientY); }}
-            onTouchStart={(e) => {
-              e.stopPropagation();
-              if (e.touches.length === 1) {
-                handleResizeStart(e.touches[0].clientX, e.touches[0].clientY);
-              }
-            }}
-          >
-            <svg width="12" height="12" viewBox="0 0 12 12" className="absolute bottom-0.5 right-0.5 text-gray-400">
-              <line x1="10" y1="2" x2="2" y2="10" stroke="currentColor" strokeWidth="1" />
-              <line x1="10" y1="5" x2="5" y2="10" stroke="currentColor" strokeWidth="1" />
-              <line x1="10" y1="8" x2="8" y2="10" stroke="currentColor" strokeWidth="1" />
-            </svg>
-          </div>
-        )}
       </div>
     </>
   );

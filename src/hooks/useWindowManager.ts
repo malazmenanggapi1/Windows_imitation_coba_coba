@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { WindowState } from '../types';
+import { processManager } from '../lib/processManager';
 
 let nextZIndex = 100;
 let windowCounter = 0;
@@ -26,11 +27,20 @@ export function useWindowManager() {
       zIndex: nextZIndex,
     };
 
+    // Create process for this window
+    processManager.createProcess(id, title, icon, title, component);
+
     setWindows(prev => [...prev, newWindow]);
     return id;
   }, []);
 
   const closeWindow = useCallback((id: string) => {
+    // Find and terminate the process
+    const process = processManager.getProcessByWindowId(id);
+    if (process) {
+      processManager.terminateProcess(process.pid);
+    }
+    
     setWindows(prev => prev.filter(w => w.id !== id));
   }, []);
 
@@ -67,6 +77,15 @@ export function useWindowManager() {
 
   const resizeWindow = useCallback((id: string, width: number, height: number) => {
     setWindows(prev => prev.map(w => w.id === id ? { ...w, width, height } : w));
+  }, []);
+
+  // Update process stats periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      processManager.updateProcessStats();
+    }, 2000);
+
+    return () => clearInterval(interval);
   }, []);
 
   return {
