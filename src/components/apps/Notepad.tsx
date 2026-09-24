@@ -1,13 +1,31 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { vfs } from '../../lib/virtualFileSystem';
 
-export default function Notepad() {
+interface NotepadProps {
+  filePath?: string[];
+  fileName?: string;
+}
+
+export default function Notepad({ filePath, fileName }: NotepadProps) {
   const [text, setText] = useState('');
-  const [fileName, setFileName] = useState('Untitled');
+  const [currentFileName, setCurrentFileName] = useState(fileName || 'Untitled');
+  const [currentFilePath, setCurrentFilePath] = useState<string[] | undefined>(filePath);
   const [modified, setModified] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [wordWrap, setWordWrap] = useState(true);
   const [fontSize, setFontSize] = useState(14);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Load file content if filePath is provided
+  useEffect(() => {
+    if (filePath && filePath.length > 0) {
+      const content = vfs.readFile(filePath);
+      if (content !== null) {
+        setText(content);
+        setModified(false);
+      }
+    }
+  }, [filePath]);
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value);
@@ -15,41 +33,62 @@ export default function Notepad() {
   };
 
   const handleNew = () => {
+    if (modified && !confirm('Discard unsaved changes?')) {
+      return;
+    }
     setText('');
-    setFileName('Untitled');
-    setModified(false);
-    setOpenMenu(null);
-  };
-
-  const handleSave = () => {
-    const blob = new Blob([text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${fileName}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+    setCurrentFileName('Untitled');
+    setCurrentFilePath(undefined);
     setModified(false);
     setOpenMenu(null);
   };
 
   const handleOpen = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.txt,.md,.js,.ts,.css,.html,.json';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          setText(ev.target?.result as string || '');
-          setFileName(file.name.replace(/\.[^/.]+$/, ''));
-          setModified(false);
-        };
-        reader.readAsText(file);
+    if (modified && !confirm('Discard unsaved changes?')) {
+      return;
+    }
+    const fileName = prompt('Enter file path (e.g., Documents/notes.txt):');
+    if (fileName) {
+      const path = fileName.split('/');
+      const content = vfs.readFile(path);
+      if (content !== null) {
+        setText(content);
+        setCurrentFilePath(path);
+        setCurrentFileName(path[path.length - 1]);
+        setModified(false);
+      } else {
+        alert('File not found');
       }
-    };
-    input.click();
+    }
+    setOpenMenu(null);
+  };
+
+  const handleSave = () => {
+    if (currentFilePath) {
+      vfs.writeFile(currentFilePath, text);
+      setModified(false);
+    } else {
+      handleSaveAs();
+    }
+    setOpenMenu(null);
+  };
+
+  const handleSaveAs = () => {
+    const fileName = prompt('Save as (e.g., Documents/myfile.txt):', currentFileName);
+    if (fileName) {
+      const path = fileName.split('/');
+      const newFileName = path.pop() || 'untitled.txt';
+      
+      // Create file if it doesn't exist
+      const success = vfs.create(path, newFileName, 'file', text);
+      if (success) {
+        setCurrentFilePath([...path, newFileName]);
+        setCurrentFileName(newFileName);
+        setModified(false);
+      } else {
+        alert('Failed to save file');
+      }
+    }
     setOpenMenu(null);
   };
 
@@ -67,6 +106,7 @@ export default function Notepad() {
       { label: 'New', action: handleNew, shortcut: 'Ctrl+N' },
       { label: 'Open...', action: handleOpen, shortcut: 'Ctrl+O' },
       { label: 'Save', action: handleSave, shortcut: 'Ctrl+S' },
+      { label: 'Save As...', action: handleSaveAs, shortcut: 'Ctrl+Shift+S' },
       { separator: true, label: '' },
       { label: 'Page setup...', action: () => setOpenMenu(null) },
       { label: 'Print...', action: () => window.print(), shortcut: 'Ctrl+P' },
@@ -163,6 +203,7 @@ export default function Notepad() {
       <div className="flex items-center h-[22px] bg-gray-50 border-t border-gray-200 px-2 text-[11px] text-gray-500">
         <span className="mr-4">Ln {cursorPos.line}, Col {cursorPos.col}</span>
         <span className="mr-4">{text.length} characters</span>
+        <span className="mr-4">{currentFileName}{modified ? ' •' : ''}</span>
         <span className="ml-auto mr-4">{fontSize * 100 / 14}%</span>
         <span>UTF-8</span>
       </div>

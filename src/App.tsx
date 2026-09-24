@@ -24,6 +24,7 @@ import Settings from './components/apps/Settings';
 import Terminal from './components/apps/Terminal';
 import Browser from './components/apps/Browser';
 import Paint from './components/apps/Paint';
+import TaskManager from './components/apps/TaskManager';
 
 type AppState = 'boot' | 'lock' | 'desktop';
 
@@ -200,13 +201,13 @@ function App() {
         handleAppOpen('settings', 'Settings', '⚙️');
         break;
       case 'taskmanager':
-        addToast('System', 'Task Manager', 'Task Manager is not available in this demo.', '📊', 3000);
+        handleAppOpen('taskmanager', 'Task Manager', '📊');
         break;
       case 'desktop':
         windows.forEach(w => minimizeWindow(w.id));
         break;
     }
-  }, [handleAppOpen, addToast, windows, minimizeWindow]);
+  }, [handleAppOpen, windows, minimizeWindow]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -220,15 +221,55 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [closeAllPopups]);
 
+  const handleOpenFileWith = (filePath: string[], fileName: string, app: string) => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    let component = app;
+    let title = fileName;
+    let icon = '📝';
+
+    // Determine app based on file extension if not specified
+    if (!app) {
+      switch (ext) {
+        case 'txt':
+        case 'md':
+          component = 'notepad';
+          icon = '📝';
+          break;
+        case 'jpg':
+        case 'jpeg':
+        case 'png':
+        case 'gif':
+          component = 'photos';
+          icon = '🖼️';
+          break;
+        default:
+          component = 'notepad';
+          icon = '📝';
+      }
+    }
+
+    if (component === 'notepad') {
+      openWindow(title, icon, `notepad:${filePath.join('/')}`);
+    }
+  };
+
   const renderAppContent = (component: string) => {
+    // Check if this is a notepad with file path
+    if (component.startsWith('notepad:')) {
+      const filePath = component.substring(8).split('/');
+      const fileName = filePath[filePath.length - 1];
+      return <Notepad filePath={filePath} fileName={fileName} />;
+    }
+
     switch (component) {
       case 'notepad': return <Notepad />;
       case 'calculator': return <Calculator />;
-      case 'explorer': return <FileExplorer />;
+      case 'explorer': return <FileExplorer onOpenWith={handleOpenFileWith} />;
       case 'settings': return <Settings />;
       case 'terminal': return <Terminal />;
       case 'browser': return <Browser />;
       case 'paint': return <Paint />;
+      case 'taskmanager': return <TaskManager />;
       case 'recyclebin': return (
         <div className="flex flex-col items-center justify-center h-full bg-white text-gray-500">
           <span className="text-6xl mb-4">🗑️</span>

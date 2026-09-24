@@ -14,11 +14,11 @@ const pinnedApps: DesktopIcon[] = [
   { id: 'browser', title: 'Microsoft Edge', icon: '🌐', component: 'browser' },
   { id: 'terminal', title: 'Terminal', icon: '⬛', component: 'terminal' },
   { id: 'paint', title: 'Paint', icon: '🎨', component: 'paint' },
+  { id: 'taskmanager', title: 'Task Manager', icon: '📊', component: 'taskmanager' },
   { id: 'photos', title: 'Photos', icon: '🖼️', component: 'photos' },
   { id: 'store', title: 'Microsoft Store', icon: '🛍️', component: 'store' },
   { id: 'mail', title: 'Mail', icon: '📧', component: 'mail' },
   { id: 'calendar', title: 'Calendar', icon: '📅', component: 'calendar' },
-  { id: 'music', title: 'Groove Music', icon: '🎵', component: 'music' },
 ];
 
 const allApps = [
@@ -34,6 +34,7 @@ const allApps = [
   { name: 'Paint', icon: '🎨', component: 'paint', title: 'Paint' },
   { name: 'Photos', icon: '🖼️', component: 'photos', title: 'Photos' },
   { name: 'Settings', icon: '⚙️', component: 'settings', title: 'Settings' },
+  { name: 'Task Manager', icon: '📊', component: 'taskmanager', title: 'Task Manager' },
   { name: 'Terminal', icon: '⬛', component: 'terminal', title: 'Terminal' },
 ];
 
